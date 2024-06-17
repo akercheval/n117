@@ -1,10 +1,10 @@
 @font-face {
     font-family: Helvetica;
-    src: url("fonts/HelveticaBold.otf");
+    src: url("fonts/Helvetica-Bold.otf");
 }
 @font-face {
     font-family: CMU;
-    src: url("fonts/cmunsi.otf");
+    src: url("fonts/cmunci.otf");
 }
 body {
     margin: 20px;
