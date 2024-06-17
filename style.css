@@ -1,9 +1,19 @@
+@font-face {
+    font-family: Helvetica;
+    src: url("fonts/HelveticaBold.otf");
+}
+@font-face {
+    font-family: CMU;
+    src: url("fonts/cmunsi.otf");
+}
 body {
     margin: 20px;
     background-color: #30353b;
 }
 
 h1 {
+    font-family: "Helvetica";
+    font-size: 50px;
     color: #bcebcb;
 }
 
@@ -11,6 +21,14 @@ a {
     color: #87d68d;
 }
 
+h2 {
+    font-family: "CMU";
+    font-size: 30px;
+    color: #f7fff6;
+}
+
 p {
+    font-family: "CMU";
+    font-size: 20px;
     color: #f7fff6;
 }
