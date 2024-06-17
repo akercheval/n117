@@ -4,7 +4,7 @@
 }
 @font-face {
     font-family: CMU;
-    src: url("fonts/cmunci.otf");
+    src: url("fonts/cmunrm.otf");
 }
 body {
     margin: 20px;
@@ -23,12 +23,22 @@ a {
 
 h2 {
     font-family: "CMU";
-    font-size: 30px;
+    font-size: 40px;
     color: #f7fff6;
 }
 
+h3 {
+    font-family: "Helvetica";
+    font-size: 30px;
+    color: #f7fff6;
+}
 p {
     font-family: "CMU";
-    font-size: 20px;
+    font-size: 30px;
+    color: #f7fff6;
+}
+li {
+    font-family: "CMU";
+    font-size: 30px;
     color: #f7fff6;
 }
