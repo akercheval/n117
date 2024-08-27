@@ -1,0 +1,7 @@
+dummy:$1$nSbOMgRn$iajRN8RbpQq5A3xoabL1g0:1009:1009:,,,:/home/dummy:/bin/bash
+scream:$1$1TVrGi3K$NRDUCYhFvCfbeUZMUWKtI0:1010:1010:,,,:/home/scream:/bin/bash
+bluth:$1$I8EYzNQx$fdoQmyQfx2H/DigZxEBAd0:1011:1011:,,,:/home/bluth:/bin/bash
+ari:$1$lI02Z/Qu$CE2Hb1ul3ph4THHBA5IQc.:1012:1012:,,,:/home/ari/:/bin/bash
+keys:$1$9127YyTN$Gj4lCSx.ePsT1mhx6WsZB1:1013:1013:,,,:/home/keys:/bin/bash
+oldapt:$1$M7d.uHoK$WalGIPdweqDgQgpwiZOpZ.:1014:1014:,,,:/home/oldapt:/bin/bash
+dps:$1$.w2LjQ32$LW1IvCIxB8dCo9gJV29nq0:1015:1015:,,,:/home/dps:/bin/bash
