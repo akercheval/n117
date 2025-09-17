@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graph Crafter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Press Start 2P', cursive;
+            background-color: #5a8a2b; /* Grassy green */
+            background-image: linear-gradient(rgba(0,0,0,0.1) 2px, transparent 2px), linear-gradient(90deg, rgba(0,0,0,0.1) 2px, transparent 2px);
+            background-size: 30px 30px;
+            touch-action: none;
+            image-rendering: pixelated;
+        }
+        .mc-ui {
+            background-color: #C6C6C6;
+            border-style: solid;
+            border-width: 4px;
+            border-top-color: #FFFFFF;
+            border-left-color: #FFFFFF;
+            border-right-color: #555555;
+            border-bottom-color: #555555;
+        }
+        .mc-ui-inset {
+            background-color: #7b7b7b;
+             border-style: solid;
+            border-width: 4px;
+            border-top-color: #555555;
+            border-left-color: #555555;
+            border-right-color: #FFFFFF;
+            border-bottom-color: #FFFFFF;
+        }
+        .mc-button {
+            background-color: #C6C6C6;
+            border-style: solid;
+            border-width: 4px;
+            border-top-color: #FFFFFF;
+            border-left-color: #FFFFFF;
+            border-right-color: #555555;
+            border-bottom-color: #555555;
+            text-shadow: 2px 2px #3a3a3a;
+        }
+        .mc-button:active, .mc-button:focus {
+            border-top-color: #555555;
+            border-left-color: #555555;
+            border-right-color: #FFFFFF;
+            border-bottom-color: #FFFFFF;
+            outline: none;
+        }
+        .mc-text {
+            text-shadow: 2px 2px #3a3a3a;
+        }
+        canvas {
+            cursor: crosshair;
+        }
+        .feedback-correct {
+            color: #55FF55; /* Minecraft Green */
+            text-shadow: 2px 2px #103a10;
+        }
+        .feedback-incorrect {
+            color: #FF5555; /* Minecraft Red */
+            text-shadow: 2px 2px #3a1010;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-2xl bg-[#a07353] p-6 shadow-lg mc-ui">
+        
+        <header class="text-center mb-6">
+            <h1 class="text-3xl font-bold text-white mc-text">Graph Crafter</h1>
+            <p class="text-white mt-2 text-sm mc-text">Craft lines and mine for points!</p>
+        </header>
+
+        <!-- Score and Mode Selection -->
+        <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+            <div id="score" class="text-lg font-semibold bg-yellow-400 text-black px-4 py-2 mc-ui-inset">XP: 0</div>
+            <div class="flex gap-2 p-1 bg-black/20 rounded-lg">
+                <button id="graph-mode-btn" class="px-4 py-2 text-xs font-medium text-white mc-button bg-gray-500">Craft a Line</button>
+                <button id="write-mode-btn" class="px-4 py-2 text-xs font-medium text-white mc-button">Mine the Equation</button>
+            </div>
+        </div>
+
+        <!-- Game Area -->
+        <div class="space-y-4">
+            <!-- Question Display -->
+            <div id="question-container" class="mc-ui-inset p-4 text-center">
+                <p class="text-xs text-white/80 mc-text" id="instruction"></p>
+                <p class="text-2xl font-bold text-white mc-text" id="equation"></p>
+            </div>
+
+            <!-- Canvas for Graph -->
+            <div class="relative mc-ui-inset p-1">
+                <canvas id="graph-canvas" width="500" height="500" class="w-full h-auto bg-white"></canvas>
+            </div>
+
+            <!-- User Input Area -->
+            <div id="input-container" class="flex flex-col items-center gap-4">
+                 <!-- Inputs for 'Write Equation' mode -->
+                <div id="write-inputs" class="hidden flex items-center justify-center gap-2">
+                    <span class="text-xl font-semibold text-white mc-text">y =</span>
+                    <input type="text" id="slope-input" class="w-20 p-2 text-center text-white mc-ui-inset focus:outline-none">
+                    <span class="text-xl font-semibold text-white mc-text">x +</span>
+                    <input type="text" id="intercept-input" class="w-20 p-2 text-center text-white mc-ui-inset focus:outline-none">
+                </div>
+                <button id="check-btn" class="w-full sm:w-1/2 text-white font-bold py-3 mc-button text-lg">Craft It!</button>
+            </div>
+             <!-- Feedback and Next Button -->
+            <div id="feedback-container" class="text-center h-12">
+                <p id="feedback" class="font-semibold text-lg"></p>
+            </div>
+            <button id="next-btn" class="w-full sm:w-1/2 text-white font-bold py-3 mc-button hidden mx-auto text-lg">Next Challenge</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('graph-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // UI Elements
+        const scoreEl = document.getElementById('score');
+        const graphModeBtn = document.getElementById('graph-mode-btn');
+        const writeModeBtn = document.getElementById('write-mode-btn');
+        const instructionEl = document.getElementById('instruction');
+        const equationEl = document.getElementById('equation');
+        const writeInputs = document.getElementById('write-inputs');
+        const slopeInput = document.getElementById('slope-input');
+        const interceptInput = document.getElementById('intercept-input');
+        const checkBtn = document.getElementById('check-btn');
+        const feedbackEl = document.getElementById('feedback');
+        const nextBtn = document.getElementById('next-btn');
+
+        // Game state
+        let state = {
+            mode: 'graphing', // 'graphing' or 'writing'
+            score: 0,
+            currentQuestionIndex: 0,
+            playerPoints: [],
+            hoverPoint: null, // For snap-to-grid hover effect
+            questions: {
+                graphing: [
+                    { m: 2, b: 1, text: 'y = 2x + 1' },
+                    { m: -1, b: 4, text: 'y = -x + 4' },
+                    { m: 1/3, b: -2, text: 'y = (1/3)x - 2' },
+                    { m: -2, b: -3, text: 'y = -2x - 3' },
+                    { m: 1, b: -5, text: 'y = x - 5'}
+                ],
+                writing: [
+                    { m: -2, b: 3, points: [{x: 0, y: 3}, {x: 2, y: -1}] },
+                    { m: 0.5, b: -1, points: [{x: 0, y: -1}, {x: 4, y: 1}] },
+                    { m: 3, b: -4, points: [{x: 0, y: -4}, {x: 1, y: -1}] },
+                    { m: -2, b: 0, points: [{x: 0, y: 0}, {x: 1, y: -2}] },
+                    { m: -0.5, b: 2, points: [{x: 0, y: 2}, {x: 2, y: 1}]}
+                ]
+            }
+        };
+
+        // Canvas settings
+        const gridSize = 50; // 50px per unit
+        const numLines = 10;
+        let center = { x: 0, y: 0 };
+        let canvasLogicalWidth = 500;
+        let canvasLogicalHeight = 500;
+
+        // --- Drawing Functions ---
+        
+        // This function redraws everything on the canvas.
+        function redrawCanvas() {
+            ctx.clearRect(0, 0, canvasLogicalWidth, canvasLogicalHeight);
+            drawGrid();
+
+            // Redraw the line in writing mode
+            if (state.mode === 'writing') {
+                 const q = state.questions.writing[state.currentQuestionIndex];
+                 const p1 = toCanvasCoords(-5, q.m * -5 + q.b);
+                 const p2 = toCanvasCoords(5, q.m * 5 + q.b);
+                 drawLine(p1, p2, '#1e293b', 6);
+            }
+
+            // Redraw player's selected points
+            state.playerPoints.forEach(p => drawPoint(p.x, p.y));
+
+            // Draw hover point if it exists
+            if (state.hoverPoint && state.mode === 'graphing' && state.playerPoints.length < 2) {
+                drawPoint(state.hoverPoint.x, state.hoverPoint.y, 'rgba(255, 85, 85, 0.5)'); // Semi-transparent
+            }
+        }
+
+
+        function drawGrid() {
+            // No clearRect here, handled by redrawCanvas
+            ctx.strokeStyle = '#8B8B8B'; // More visible stone gray
+            ctx.lineWidth = 2; // Thicker grid lines
+
+            // Grid lines
+            for (let i = 0; i <= numLines * 2; i++) {
+                const pos = i * gridSize;
+                ctx.beginPath();
+                ctx.moveTo(pos, 0);
+                ctx.lineTo(pos, canvasLogicalHeight);
+                ctx.moveTo(0, pos);
+                ctx.lineTo(canvasLogicalWidth, pos);
+                ctx.stroke();
+            }
+
+            // Axes
+            ctx.strokeStyle = '#3B3B3B'; // Darker gray for axes
+            ctx.lineWidth = 6; // Thicker axes
+            ctx.beginPath();
+            ctx.moveTo(center.x, 0);
+            ctx.lineTo(center.x, canvasLogicalHeight);
+            ctx.moveTo(0, center.y);
+            ctx.lineTo(canvasLogicalWidth, center.y);
+            ctx.stroke();
+        }
+
+        // Convert canvas coordinates to graph coordinates
+        function toGraphCoords(canvasX, canvasY) {
+            return {
+                x: (canvasX - center.x) / gridSize,
+                y: (center.y - canvasY) / gridSize
+            };
+        }
+
+        // Convert graph coordinates to canvas coordinates
+        function toCanvasCoords(graphX, graphY) {
+            return {
+                x: center.x + graphX * gridSize,
+                y: center.y - graphY * gridSize
+            };
+        }
+
+        function drawPoint(canvasX, canvasY, color = '#ff5555') {
+            ctx.fillStyle = color; // redstone red
+            ctx.strokeStyle = '#555555';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            // Larger point for better visibility
+            ctx.rect(canvasX - 8, canvasY - 8, 16, 16);
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        function drawLine(p1, p2, color = '#3b82f6', width = 4) {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+        }
+
+        // --- Game Logic Functions ---
+        function setupQuestion() {
+            feedbackEl.textContent = '';
+            feedbackEl.className = 'font-semibold text-lg';
+            nextBtn.classList.add('hidden');
+            state.playerPoints = [];
+            
+            if (state.mode === 'graphing') {
+                const q = state.questions.graphing[state.currentQuestionIndex];
+                instructionEl.textContent = 'Select two points to craft the line.';
+                equationEl.textContent = q.text;
+                writeInputs.classList.add('hidden');
+                checkBtn.classList.add('hidden'); // Hide check button for graphing mode
+                canvas.style.cursor = 'crosshair';
+            } else { // writing mode
+                const q = state.questions.writing[state.currentQuestionIndex];
+                instructionEl.textContent = 'Mine the slope (rise/run) and y-intercept (b).';
+                equationEl.textContent = `y = m x + b`;
+                writeInputs.classList.remove('hidden');
+                checkBtn.classList.remove('hidden');
+                slopeInput.value = '';
+                interceptInput.value = '';
+                canvas.style.cursor = 'default';
+            }
+            redrawCanvas();
+        }
+        
+        function updateScore(points) {
+            state.score += points;
+            scoreEl.textContent = `XP: ${state.score}`;
+        }
+        
+        function checkGraphingAnswer() {
+            if (state.playerPoints.length < 2) return;
+            const [p1, p2] = state.playerPoints;
+            const graphP1 = toGraphCoords(p1.x, p1.y);
+            const graphP2 = toGraphCoords(p2.x, p2.y);
+            
+            if (Math.abs(graphP2.x - graphP1.x) < 0.01) { // Vertical line
+                feedbackEl.textContent = "Oops! That's a vertical line.";
+                feedbackEl.classList.add('feedback-incorrect');
+                setTimeout(setupQuestion, 1500);
+                return;
+            }
+
+            const playerM = (graphP2.y - graphP1.y) / (graphP2.x - graphP1.x);
+            const playerB = graphP1.y - playerM * graphP1.x;
+            
+            const correctQ = state.questions.graphing[state.currentQuestionIndex];
+
+            // Check if both points are ON the correct line
+            const isP1OnLine = Math.abs((correctQ.m * graphP1.x + correctQ.b) - graphP1.y) < 0.3;
+            const isP2OnLine = Math.abs((correctQ.m * graphP2.x + correctQ.b) - graphP2.y) < 0.3;
+
+            if (isP1OnLine && isP2OnLine) {
+                feedbackEl.textContent = 'Nicely Crafted!';
+                feedbackEl.classList.add('feedback-correct');
+                updateScore(10);
+                nextBtn.classList.remove('hidden');
+            } else {
+                feedbackEl.textContent = 'Creeper! Try again!';
+                feedbackEl.classList.add('feedback-incorrect');
+                // Redraw grid after a delay to clear incorrect line
+                setTimeout(setupQuestion, 1500);
+            }
+        }
+        
+        function checkWritingAnswer() {
+            // Use a safer eval method or parse fraction
+            const safeEval = (str) => {
+                try {
+                    if (str.includes('/')) {
+                        const parts = str.split('/');
+                        return parseFloat(parts[0]) / parseFloat(parts[1]);
+                    }
+                    return parseFloat(str);
+                } catch (e) {
+                    return NaN;
+                }
+            };
+            const playerM = safeEval(slopeInput.value);
+            const playerB = safeEval(interceptInput.value);
+            
+            const correctQ = state.questions.writing[state.currentQuestionIndex];
+            
+            if (isNaN(playerM) || isNaN(playerB)) {
+                feedbackEl.textContent = "Please enter valid numbers for m and b.";
+                feedbackEl.classList.add('feedback-incorrect');
+                return;
+            }
+
+            if (Math.abs(playerM - correctQ.m) < 0.01 && Math.abs(playerB - correctQ.b) < 0.01) {
+                feedbackEl.textContent = `Diamond Find! y = ${correctQ.text || (correctQ.m + 'x + ' + correctQ.b)}`;
+                feedbackEl.classList.add('feedback-correct');
+                updateScore(10);
+                nextBtn.classList.remove('hidden');
+                checkBtn.classList.add('hidden');
+            } else {
+                feedbackEl.textContent = 'Almost! Dig deeper.';
+                feedbackEl.classList.add('feedback-incorrect');
+            }
+        }
+        
+        // ACCESSIBILITY UPDATE: This function now snaps clicks to the grid
+        function handleCanvasClick(e) {
+            if (state.mode !== 'graphing' || state.playerPoints.length >= 2) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            // 1. Convert click to graph coordinates
+            const graphCoords = toGraphCoords(x, y);
+
+            // 2. Round to the nearest integer to find the closest grid intersection
+            const snappedGraphX = Math.round(graphCoords.x);
+            const snappedGraphY = Math.round(graphCoords.y);
+
+            // 3. Convert the snapped graph coordinates back to canvas coordinates
+            const snappedCanvasCoords = toCanvasCoords(snappedGraphX, snappedGraphY);
+            
+            // Avoid adding the same point twice
+            if (state.playerPoints.some(p => p.x === snappedCanvasCoords.x && p.y === snappedCanvasCoords.y)) {
+                return;
+            }
+
+            state.playerPoints.push(snappedCanvasCoords);
+            state.hoverPoint = null; // Hide hover point after click
+            redrawCanvas();
+            
+            if (state.playerPoints.length === 2) {
+                const [p1, p2] = state.playerPoints;
+                const graphP1 = toGraphCoords(p1.x, p1.y);
+                const graphP2 = toGraphCoords(p2.x, p2.y);
+                const playerM = (graphP2.y - graphP1.y) / (graphP2.x - graphP1.x);
+                const playerB = graphP1.y - playerM * graphP1.x;
+                const lineStart = toCanvasCoords(-10, playerM * -10 + playerB);
+                const lineEnd = toCanvasCoords(10, playerM * 10 + playerB);
+                
+                drawLine(lineStart, lineEnd, '#3b82f6', 6);
+                checkGraphingAnswer();
+            }
+        }
+        
+        // ACCESSIBILITY UPDATE: Show a hover preview of the snapped point
+        function handleCanvasMouseMove(e) {
+             if (state.mode !== 'graphing' || state.playerPoints.length >= 2) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            const graphCoords = toGraphCoords(x, y);
+            const snappedGraphX = Math.round(graphCoords.x);
+            const snappedGraphY = Math.round(graphCoords.y);
+            state.hoverPoint = toCanvasCoords(snappedGraphX, snappedGraphY);
+            
+            redrawCanvas();
+        }
+        
+        function handleCanvasMouseLeave(e) {
+            state.hoverPoint = null;
+            redrawCanvas();
+        }
+
+        function switchMode(newMode) {
+            if (state.mode === newMode) return;
+            state.mode = newMode;
+            state.currentQuestionIndex = 0;
+            
+            if (newMode === 'graphing') {
+                graphModeBtn.classList.add('bg-gray-500');
+                writeModeBtn.classList.remove('bg-gray-500');
+            } else {
+                writeModeBtn.classList.add('bg-gray-500');
+                graphModeBtn.classList.remove('bg-gray-500');
+            }
+            setupQuestion();
+        }
+        
+        function handleNextQuestion() {
+            const questionsForMode = state.questions[state.mode];
+            state.currentQuestionIndex++;
+            if (state.currentQuestionIndex >= questionsForMode.length) {
+                // Game over for this mode
+                instructionEl.textContent = `Level Complete! You earned ${state.score} XP.`;
+                equationEl.textContent = "Choose a new world to craft in!";
+                nextBtn.classList.add('hidden');
+                checkBtn.classList.add('hidden');
+                writeInputs.classList.add('hidden');
+                state.hoverPoint = null;
+                redrawCanvas();
+            } else {
+                setupQuestion();
+            }
+        }
+
+        // --- Event Listeners ---
+        canvas.addEventListener('click', handleCanvasClick);
+        canvas.addEventListener('mousemove', handleCanvasMouseMove); // For hover effect
+        canvas.addEventListener('mouseleave', handleCanvasMouseLeave); // Clear hover effect
+        graphModeBtn.addEventListener('click', () => switchMode('graphing'));
+        writeModeBtn.addEventListener('click', () => switchMode('writing'));
+        checkBtn.addEventListener('click', checkWritingAnswer);
+        nextBtn.addEventListener('click', handleNextQuestion);
+
+        // --- Initial Game Setup ---
+        function init() {
+            // Adjust canvas for high DPI displays
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            
+            canvasLogicalWidth = rect.width;
+            canvasLogicalHeight = rect.height;
+
+            canvas.width = canvasLogicalWidth * dpr;
+            canvas.height = canvasLogicalHeight * dpr;
+            
+            ctx.scale(dpr, dpr);
+            
+            canvas.style.width = `${canvasLogicalWidth}px`;
+            canvas.style.height = `${canvasLogicalHeight}px`;
+
+            // Recalculate center based on the logical canvas dimensions
+            center = { x: canvasLogicalWidth / 2, y: canvasLogicalHeight / 2 };
+
+            setupQuestion();
+        }
+        
+        window.addEventListener('load', init);
+        window.addEventListener('resize', init); // Redraw on resize
+    </script>
+</body>
+</html>
+
